@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <title>MapReduce requester</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../prism.css" rel="stylesheet">
+    <style>
+      #map, #reduce {
+        font-family: monospace;
+      }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../prism.js"></script>
+  </head>
+  <body>
+    <div class="col-lg-8 mx-auto p-4 py-md-5">
+      <main>
+        <div class="row g-5">
+          <div class="col-md-8">
+            <h2>Send a job</h2>
+            <!-- <p></p> -->
+            <form class="needs-validation" novalidate>
+              <div class="row g-3">
+                <div class="col-md-12">
+                  <label for="file" class="form-label">Data to process (in JSON format)</label>
+                  <input type="file" class="form-control" id="file" placeholder="" accept=".json" required>
+                </div>
+
+                <div class="col-12">
+                  <label for="map" class="form-label">Map function (in JavaScript, should not variables from outside)</label>
+                  <div id="map" class="form-control" required>function map(key, value) {
+
+}</div>
+                </div>
+
+                <div class="col-12">
+                  <label for="reduce" class="form-label">Reduce function (in JavaScript, should not variables from outside)</label>
+                  <div id="reduce" class="form-control" required>function reduce(key, values) {
+
+}</div>
+                </div>
+
+              </div>
+
+              <hr class="my-4">
+
+              <div class="form-check">
+                <input type="checkbox" class="form-check-input" id="single-result">
+                <label class="form-check-label" for="single-result">Send reduce results together</label>
+              </div>
+
+              <hr class="my-4">
+
+              <button class="w-100 btn btn-primary btn-md" type="submit">Send</button>
+            </form>
+          </div>
+
+          <div class="col-md-4">
+            <h2>Jobs</h2>
+            <p>Job requests made by you:</p>
+            <div class="list-group w-auto">
+
+              <div class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true">
+                <div class="d-flex gap-2 w-100 justify-content-between">
+                  <div>
+                    <h6 class="mb-0">dataset1.json</h6>
+                    <hr>
+                    <p class="mb-0 opacity-75"><a href="#">Result 1</a></p>
+                    <p class="mb-0 opacity-75"><a href="#">Result 2</a></p>
+                  </div>
+                  <small class="text-nowrap" style="color:var(--bs-success);">Success!</small>
+                </div>
+              </div>
+              <div class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true">
+                <div class="d-flex gap-2 w-100 justify-content-between">
+                  <div>
+                    <h6 class="mb-0">dataset2.json</h6>
+                  </div>
+                  <small class="text-nowrap" style="color:var(--bs-danger);">Failed</small>
+                </div>
+              </div>
+              <div class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true">
+                <div class="d-flex gap-2 w-100 justify-content-between">
+                  <div>
+                    <h6 class="mb-0">dataset.json</h6>
+                  </div>
+                  <small class="text-nowrap" style="color:var(--bs-warning); text-shadow: 1px 1px black;">In progress</small>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script src="../socket.io.min.js"></script>
+
+    <script type="module" src="requester.js">
+    </script>
+  </body>
+</html>
