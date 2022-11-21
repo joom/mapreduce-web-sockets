@@ -1,16 +1,19 @@
 const express = require("express")
 const app = express()
 const http = require("http").Server(app)
+const base64id = require("base64id")
 const io = require("socket.io")(http)
 const port = process.env.PORT || 3000
+const fs = require("fs").promises
+
 
 // dictionary of workers
 // maps worker socket IDs to booleans
 let busyWorkers = {}
 
 // dictionary of requesters
-// maps job IDs (UUID) to requester socket IDs
-let jobToRequester = {}
+// maps job IDs (UUID) to job object
+let jobs = {}
 
 // queue of workers
 // queue of jobs
@@ -35,12 +38,14 @@ io.on("connection", async socket => {
 
   socket.on("job", async job => {
     console.log("new job!", job)
-    jobToRequester[job.jobId] = job.requesterId
-    // console.log(job.file.toString())
+    jobs[job.jobId] = job
+    await fs.writeFile(`${job.jobId}.json`, job.fileContent)
 
     const activeWorkers = await io.in("worker").fetchSockets()
+    // picks the first available worker (TODO maybe try random?)
     let pickedIndex = activeWorkers.findIndex(worker => !busyWorkers[worker.id])
     if (pickedIndex === -1) {
+      console.error("No available workers!")
       // It shouldn't fail, it should be added to the queue
 
       // socket.emit("jobFinished", {
@@ -52,7 +57,11 @@ io.on("connection", async socket => {
       // })
     } else {
       let picked = activeWorkers[pickedIndex]
-      picked.emit("task", job)
+      let task = {
+        taskId: base64id.generateId(),
+        jobId: job.jobId
+      }
+      picked.emit("task", task)
     }
   })
 
@@ -61,7 +70,7 @@ io.on("connection", async socket => {
     busyWorkers[socket.id] = false
 
     // if the entire job is finished
-    delete jobToRequester[taskResult.jobId]
+    delete jobs[taskResult.jobId]
     io.emit("jobFinished", taskResult)
   })
 

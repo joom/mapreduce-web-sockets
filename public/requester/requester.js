@@ -21,11 +21,13 @@ document.querySelector(`button[type="submit"]`).addEventListener("click", e => {
     alert("Please select only one data file.")
     return
   }
+  let file = document.querySelector("#file").files[0]
 
   let job = {
     requesterId: id,
     jobId: crypto.randomUUID(),
-    file: document.querySelector("#file").files[0],
+    fileName: file.name,
+    fileContent: file,
     map: document.querySelector("#map").innerText,
     reduce: document.querySelector("#reduce").innerText
   }
