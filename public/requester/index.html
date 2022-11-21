@@ -10,7 +10,7 @@
         font-family: monospace;
       }
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script> -->
     <script src="../prism.js"></script>
   </head>
   <body>
@@ -25,6 +25,7 @@
                 <div class="col-md-12">
                   <label for="file" class="form-label">Data to process (in JSON format)</label>
                   <input type="file" class="form-control" id="file" placeholder="" accept=".json" required>
+                  <span id="fileSize"></span>
                 </div>
 
                 <div class="col-12">
@@ -43,12 +44,12 @@
 
               </div>
 
-              <hr class="my-4">
+              <!-- <hr class="my-4"> -->
 
-              <div class="form-check">
-                <input type="checkbox" class="form-check-input" id="single-result">
-                <label class="form-check-label" for="single-result">Send reduce results together</label>
-              </div>
+              <!-- <div class="form-check"> -->
+              <!--   <input type="checkbox" class="form-check-input" id="single-result"> -->
+              <!--   <label class="form-check-label" for="single-result">Send reduce results together</label> -->
+              <!-- </div> -->
 
               <hr class="my-4">
 
@@ -59,35 +60,19 @@
           <div class="col-md-4">
             <h2>Jobs</h2>
             <p>Job requests made by you:</p>
-            <div class="list-group w-auto">
+            <div class="list-group w-auto" id="myJobs">
 
-              <div class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true">
-                <div class="d-flex gap-2 w-100 justify-content-between">
-                  <div>
-                    <h6 class="mb-0">dataset1.json</h6>
-                    <hr>
-                    <p class="mb-0 opacity-75"><a href="#">Result 1</a></p>
-                    <p class="mb-0 opacity-75"><a href="#">Result 2</a></p>
-                  </div>
-                  <small class="text-nowrap" style="color:var(--bs-success);">Success!</small>
-                </div>
-              </div>
-              <div class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true">
-                <div class="d-flex gap-2 w-100 justify-content-between">
-                  <div>
-                    <h6 class="mb-0">dataset2.json</h6>
-                  </div>
-                  <small class="text-nowrap" style="color:var(--bs-danger);">Failed</small>
-                </div>
-              </div>
-              <div class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true">
-                <div class="d-flex gap-2 w-100 justify-content-between">
-                  <div>
-                    <h6 class="mb-0">dataset.json</h6>
-                  </div>
-                  <small class="text-nowrap" style="color:var(--bs-warning);">In progress</small>
-                </div>
-              </div>
+<!--               <div class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true"> -->
+<!--                 <div class="d-flex gap-2 w-100 justify-content-between"> -->
+<!--                   <div> -->
+<!--                     <h6 class="mb-0">dataset1.json</h6> -->
+<!--                     <hr> -->
+<!--                     <p class="mb-0 opacity-75"><a href="#">Result 1</a></p> -->
+<!--                     <p class="mb-0 opacity-75"><a href="#">Result 2</a></p> -->
+<!--                   </div> -->
+<!--                   <small class="text-nowrap" style="color:var(--bs-success);">Success!</small> -->
+<!--                 </div> -->
+<!--               </div> -->
 
             </div>
           </div>
