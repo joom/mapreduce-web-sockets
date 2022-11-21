@@ -9,13 +9,33 @@ let mapJar = CodeJar(document.querySelector("#map"), highlight, jarOptions)
 let reduceJar = CodeJar(document.querySelector("#reduce"), highlight, jarOptions)
 
 var socket = io()
-// socket.emit("introduction", { kind: "requester" })
+let id
+socket.on("welcome", socketId => {
+  id = socketId
+  console.log(id)
+})
 
 document.querySelector(`button[type="submit"]`).addEventListener("click", e => {
   e.preventDefault()
-  socket.emit("job", "i have a job for you")
+  if (document.querySelector("#file").files.length !== 1) {
+    alert("Please select only one data file.")
+    return
+  }
+
+  let job = {
+    requesterId: id,
+    jobId: crypto.randomUUID(),
+    file: document.querySelector("#file").files[0],
+    map: document.querySelector("#map").innerText,
+    reduce: document.querySelector("#reduce").innerText
+  }
+  socket.emit("job", job)
 })
 
-socket.on("jobFinished", result => {
-  alert(`job finished with result ${result}`)
+socket.on("jobFinished", jobResult => {
+  if (jobResult.result.success) {
+    alert(`job succeeded with result ${jobResult.result}`)
+  } else {
+    alert(`job failed with result ${jobResult.result}`)
+  }
 })
