@@ -7,7 +7,7 @@ const port = process.env.PORT || 3000
 const fs = require("fs").promises
 
 // dictionary of requesters
-// map requester socket IDs to an array of job IDs
+// map requester IDs (UUID) to a requester object (requester socket ID, an array of job IDs)
 let requesters = {}
 
 // dictionary of workers
@@ -74,22 +74,29 @@ const manageQueues = async () => {
 }
 
 io.on("connection", async socket => {
-  if (socket.handshake.headers.referer.indexOf("/requester/") !== -1) {
-    socket.join("requester")
-    requesters[socket.id] = []
-  } else if (socket.handshake.headers.referer.indexOf("/worker/") !== -1) {
+  if (socket.handshake.headers.referer.indexOf("/worker/") !== -1) {
+    console.log("New worker!")
     socket.join("worker")
     busyWorkers[socket.id] = false
-  } else {
-    console.error("A connection that is neither a requester nor a worker!")
   }
-  socket.emit("welcome", socket.id)
+
+  socket.on("requesterId", async requesterId => {
+    if (socket.handshake.headers.referer.indexOf("/requester/") !== -1) {
+      console.log("New requester!")
+      socket.join("requester")
+      if (requesters[requesterId]) {
+        requesters[requesterId].socketId = socket.id
+      } else {
+        requesters[requesterId] = { socketId: socket.id, jobs: [] }
+      }
+    }
+  })
 
   socket.on("job", async job => {
     await fs.writeFile(`${job.jobId}.json`, job.fileContent)
     job.divided = false
     jobs[job.jobId] = job
-    requesters[socket.id].push(job.jobId)
+    requesters[job.requesterId].jobs.push(job.jobId)
     jobQueue.push(job.jobId)
     await manageQueues()
   })
@@ -100,16 +107,24 @@ io.on("connection", async socket => {
     removeItem(taskQueue, taskResult.taskId)
 
     // if the entire job is finished
-    let requester = jobs[taskResult.jobId].requesterId
+    let requesterId = jobs[taskResult.jobId].requesterId
+    let requesterSocketId = requesters[requesterId].socketId
+    let requesterSocket = Array.from(await io.in("requester").fetchSockets()).find(socket => socket.id == requesterSocketId)
     delete jobs[taskResult.jobId]
     removeItem(jobQueue, taskResult.jobId)
-    io.emit("jobFinished", taskResult)
+    if (requesterSocket) {
+      io.emit("jobFinished", taskResult)
+    }
     await manageQueues()
   })
 
   socket.on("disconnect", async () => {
     delete busyWorkers[socket.id]
-    delete requesters[socket.id]
+    for (let i in requesters) {
+      if (requesters[i].socketId == socket.id) {
+        requesters[i].socketId = null
+      } 
+    }
     await manageQueues()
   });
 })

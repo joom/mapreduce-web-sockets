@@ -18,6 +18,16 @@ const formatBytes = (bytes, decimals = 2) => {
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
 }
 
+// destructively remove the first element for which fn returns true
+const findAndRemove = (array, fn) => {
+  for (let i in array) {
+    if (fn(array[i])) {
+        array.splice(i, 1)
+        break
+    }
+  }
+}
+
 let fileInput = document.querySelector("#file")
 const showFileSize = () => {
   let file = fileInput.files[0]
@@ -26,8 +36,15 @@ const showFileSize = () => {
 fileInput.addEventListener("change", showFileSize)
 if (fileInput.files.length === 1) { showFileSize() }
 
+var socket = io()
 let id
-let myJobs = []
+if (localStorage.requesterId) {
+  id = localStorage.requesterId
+} else {
+  id = crypto.randomUUID()
+  localStorage.requesterId = id
+}
+socket.emit("requesterId", id)
 
 const renderJobs = () => {
   let temp = ``
@@ -59,7 +76,7 @@ const renderJobs = () => {
     if (job.error) {
       error = `<p class="mb-0" style="color:var(--bs-danger); font-weight: bold;">${job.error}</p>`
     }
-    temp += `<div class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true" data-id="${job.jobId}">
+    temp += `<div class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true">
                 <div class="d-flex gap-2 w-100 justify-content-between">
                   <div>
                     <h6 class="mb-0">${job.fileName}</h6>
@@ -67,19 +84,31 @@ const renderJobs = () => {
                     ${error}
                   </div>
                   ${status}
+                  <small class="text-nowrap delete" style="color:var(--bs-danger); cursor: pointer;" data-id="${job.jobId}">×</small>
                 </div>
               </div> `
   })
 
-
   document.querySelector('#myJobs').innerHTML = temp
+  let deletes =  document.querySelectorAll('small.delete')
+  for (let adelete of deletes) {
+    adelete.addEventListener("click", e => {
+      let jobId = e.target.attributes["data-id"].value
+      findAndRemove(myJobs, job => job.jobId === jobId)
+      localStorage.jobs = JSON.stringify(myJobs)
+      renderJobs()
+    })
+  }
 }
 
-var socket = io()
-socket.on("welcome", socketId => {
-  id = socketId
-  console.log(id)
-})
+let myJobs
+if (localStorage.jobs) {
+  myJobs = JSON.parse(localStorage.jobs)
+  renderJobs()
+} else {
+  localStorage.jobs = []
+  myJobs = []
+}
 
 document.querySelector(`button[type="submit"]`).addEventListener("click", e => {
   e.preventDefault()
@@ -100,7 +129,9 @@ document.querySelector(`button[type="submit"]`).addEventListener("click", e => {
   socket.emit("job", job)
   job.status = 0 // in progress
   job.results = []
+  delete job.fileContent
   myJobs.push(job)
+  localStorage.jobs = JSON.stringify(myJobs)
   renderJobs()
 })
 
@@ -114,5 +145,6 @@ socket.on("jobFinished", jobResult => {
     myJobs[i].status = -1
     myJobs[i].error = jobResult.result.error
   }
+  localStorage.jobs = JSON.stringify(myJobs)
   renderJobs()
 })
