@@ -1,5 +1,5 @@
-# mapreduce-webworkers
-MapReduce on WebWorkers, using Node.js
+# mapreduce-web-sockets
+MapReduce on Web Sockets, using Node.js
 
 # Instructions
 
