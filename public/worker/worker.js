@@ -14,5 +14,5 @@ socket.on("task", task => {
     jobId: task.jobId,
     taskId: task.taskId,
     result: {success: true, body: 42} 
-  });
+  })
 })

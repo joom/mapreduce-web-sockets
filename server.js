@@ -78,6 +78,7 @@ io.on("connection", async socket => {
     console.log("New worker!")
     socket.join("worker")
     busyWorkers[socket.id] = false
+    socket.emit("welcome", socket.id)
   }
 
   socket.on("requesterId", async requesterId => {

@@ -1,10 +1,11 @@
 {
-  "name": "mapreduce-webworkers",
+  "name": "mapreduce-web-sockets",
   "version": "0.0.1",
-  "description": "MapReduce on WebWorkers, using Node.js ",
+  "description": "MapReduce on Web Sockets, using Node.js",
   "dependencies": {
     "express": "^4.17.1",
-    "socket.io": "^4.1.2"
+    "socket.io": "^4.1.2",
+    "node-storage-object": "1.0.131"
   },
   "scripts": {
     "start": "node server.js"
