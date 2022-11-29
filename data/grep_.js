@@ -27,7 +27,7 @@ function reduce(key, values) {
     // values will be dummy values (1) in an array of size == no. of occurrences of key
 
     const matches = [];
-    for (i in values) {
+    for (i of values) {
         matches.push(key);  // push the matched word into matches |values| number of times
     }
     return matches;
@@ -55,4 +55,6 @@ append output to the final output file being maintained by reduce worker
 
 //console.log(map1)
 //console.log(map2)
+
+//console.log(reduce("ten", [1,1,1,1,1]))
 
