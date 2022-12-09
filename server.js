@@ -60,6 +60,7 @@ const manageTaskQueue = async () => {
       let picked = activeWorkers[pickedIndex]
       tasks[taskId].assigned = picked.id
       busyWorkers[picked.id] = true
+      // TODO add task file to the object
       picked.emit("task", tasks[taskId])
     }
   }
@@ -83,7 +84,10 @@ const manageQueues = async () => {
                 taskId: taskId,
                 jobId: jobId,
                 assigned: false,
-                result: false
+                result: false,
+                type: "map",
+                fn: jobs[jobId].map,
+                data: []
               }
               tasks[taskId] = task
               taskQueue.push(taskId)
@@ -130,8 +134,16 @@ io.on("connection", async socket => {
     tasks[taskResult.taskId].result = taskResult.result
     removeItem(taskQueue, taskResult.taskId)
 
-    // TODO check if this is map result, if it is, then save it to storage, and check if all the map tasks are finished
-    // TODO check if it is a reduce result, if it is, then save it to storage, and check if all the reduce tasks are finished
+    if (tasks[taskId].type === "map") {
+      // TODO check if this is map result, if it is, then save it to storage, 
+      // and check if all the map tasks are finished, if they are all finished, then divide into (multiple) reduce tasks
+      
+
+    } else if (tasks[taskId].type === "reduce") {
+      // TODO check if it is a reduce result, if it is, then save it to storage, 
+      // and check if all the reduce tasks are finished, if they are, send result to requester
+
+    }
 
     // FIXME if the entire job is finished
     let requesterId = jobs[taskResult.jobId].requesterId

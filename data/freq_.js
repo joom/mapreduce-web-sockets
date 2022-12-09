@@ -21,10 +21,10 @@ function map(key, value) {
     pairs sent to it by the master
 */
 
-function reduce(key, value) {
+function reduce(key, values) {
     const result = {}
     let count = 0
-    for (i of value) {
+    for (i of values) {
         count+=i
     }
     result[key] = count
