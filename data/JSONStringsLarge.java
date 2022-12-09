@@ -39,11 +39,6 @@ public class JSONStringsLarge {
 
         // first create the dictionary array object
         try {
-            myWriter.write("{\n");
-            myWriter.write('"');
-            myWriter.write("dictionary");
-            myWriter.write('"');
-            myWriter.write(':');
             myWriter.write('[');
         } catch (IOException e) {
             throw new RuntimeException("Issues here");
@@ -61,14 +56,7 @@ public class JSONStringsLarge {
                 myWriter.write(sb.toString());
                 if (inFile.hasNext()) myWriter.write(", ");
                 else {
-                    myWriter.write("],\n");   // close the array at the end
-
-                    myWriter.write('"');
-                    myWriter.write("totalCount");
-                    myWriter.write('"');
-                    myWriter.write(':');
-                    myWriter.write(String.valueOf(numWords));
-                    myWriter.write("\n}");
+                    myWriter.write("]");   // close the array at the end
                     myWriter.close();
                 }
             } catch (IOException e) {

@@ -1,3 +1,6 @@
+const SIZE = 1000 // in kilobytes
+
+const { exec } = require("child_process")
 const express = require("express")
 const app = express()
 const http = require("http").Server(app)
@@ -16,6 +19,7 @@ let busyWorkers = {}
 
 // dictionary of jobs
 // maps job IDs (UUID) to job object (requester ID, map, reduce)
+// TODO keep an array of map task IDs, and an array of reduce task IDs
 let jobs = {}
 
 // dictionary of tasks
@@ -42,25 +46,12 @@ const removeItem = (array, item) => {
   }
 }
 
-const manageQueues = async () => {
-  // Break the job into multiple tasks
-  for (const jobId of jobQueue) {
-    if (!jobs[jobId].divided) {
-      // FIXME break the job
-      let taskId = base64id.generateId()
-      let task = {
-        taskId: taskId,
-        jobId: jobId,
-        assigned: false,
-        result: false
-      }
-      tasks[taskId] = task
-      taskQueue.push(taskId)
-    }
-  }
-
+const manageTaskQueue = async () => {
   // Assign tasks to workers
   for (const taskId of taskQueue) {
+    if (tasks[taskId].assigned) {
+      continue
+    }
     const activeWorkers = await io.in("worker").fetchSockets()
     let pickedIndex = activeWorkers.findIndex(worker => !busyWorkers[worker.id])
     if (pickedIndex === -1) {
@@ -68,7 +59,39 @@ const manageQueues = async () => {
     } else {
       let picked = activeWorkers[pickedIndex]
       tasks[taskId].assigned = picked.id
+      busyWorkers[picked.id] = true
       picked.emit("task", tasks[taskId])
+    }
+  }
+}
+
+const manageQueues = async () => {
+  // Break the job into multiple tasks
+  for (const jobId of jobQueue) {
+    if (!jobs[jobId].divided) {
+      exec(`json-split -f ./tmp/${jobId}.json -s ${SIZE} -n ${jobId}`, (err, stderr, stdout) => {
+        if(err || stderr) {
+          console.error(jobId, err, stderr)
+        } else {
+          jobs[jobId].divided = true
+          const numTasks = parseInt(stdout.match(/Total files to be written: ([0-9]+)/))
+          fs.unlink(`./tmp/${jobId}.json`, err => {})
+          for (let i = 0; i < numTasks; i++) {
+            let taskId = base64id.generateId()
+            fs.rename(`./tmp/export/${jobId}-${i}.json`, `./tmp/${taskId}.json`, err => {
+              let task = {
+                taskId: taskId,
+                jobId: jobId,
+                assigned: false,
+                result: false
+              }
+              tasks[taskId] = task
+              taskQueue.push(taskId)
+              manageTaskQueue()
+            })
+          }
+        }
+      })
     }
   }
 }
@@ -94,7 +117,7 @@ io.on("connection", async socket => {
   })
 
   socket.on("job", async job => {
-    await fs.writeFile(`${job.jobId}.json`, job.fileContent)
+    await fs.writeFile(`./tmp/${job.jobId}.json`, job.fileContent)
     job.divided = false
     jobs[job.jobId] = job
     requesters[job.requesterId].jobs.push(job.jobId)
@@ -107,7 +130,10 @@ io.on("connection", async socket => {
     tasks[taskResult.taskId].result = taskResult.result
     removeItem(taskQueue, taskResult.taskId)
 
-    // if the entire job is finished
+    // TODO check if this is map result, if it is, then save it to storage, and check if all the map tasks are finished
+    // TODO check if it is a reduce result, if it is, then save it to storage, and check if all the reduce tasks are finished
+
+    // FIXME if the entire job is finished
     let requesterId = jobs[taskResult.jobId].requesterId
     let requesterSocketId = requesters[requesterId].socketId
     let requesterSocket = Array.from(await io.in("requester").fetchSockets()).find(socket => socket.id == requesterSocketId)
