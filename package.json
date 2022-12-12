@@ -4,7 +4,7 @@
   "description": "MapReduce on Web Sockets, using Node.js",
   "dependencies": {
     "express": "^4.17.1",
-    "node-storage-object": "1.0.131",
+    "key-file-storage": "2.2.10",
     "socket.io": "^4.1.2"
   },
   "scripts": {

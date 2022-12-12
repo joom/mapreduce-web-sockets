@@ -12,15 +12,15 @@ function map(key, value) {
     for (i in value) {
         if (value[i].length == 1) {
             let key = myKeysObject[value[i]]
-            let word = value[i]
-            intermediateKeys.push({key, word}) // just equal to the word
+            let val = value[i]
+            intermediateKeys.push({key, val}) // just equal to the word
         }
         else {
             // in this case the word is of length greater than one, so find the 2-gram it starts with
             let twoGram = value[i].slice(0, 2)
             let key = myKeysObject[twoGram]
-            let word = value[i]
-            intermediateKeys.push({key, word})
+            let val = value[i]
+            intermediateKeys.push({key, val})
         }
     }
 

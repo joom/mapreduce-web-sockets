@@ -22,13 +22,11 @@ function map(key, value) {
 */
 
 function reduce(key, values) {
-    const result = {}
     let count = 0
     for (i of values) {
         count+=i
     }
-    result[key] = count
-    return result
+    return [count]
 }
 
 /* 
@@ -56,5 +54,5 @@ let test = {key: "this", arr:[1,1,1,1,1,1,1,1]}
 console.log(reduce(test.key, test.arr))
 /*
 OUTPUT
-{ this: 8 }
+{ this: [8] }
 */

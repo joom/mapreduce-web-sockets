@@ -10,13 +10,23 @@ socket.on("task", task => {
   // console.log(`new task!: ${task}`)
   console.log(task);
 
-  let result
+  let result = {}
   if (task.type === "map") {
-    result = eval(fn)(task.taskId, task.data)
+    // freq example: task.data is an array of arrays
+    const fn = eval(fn)
+    for (const p in task.data) {
+      let intermediate = fn(task.taskId, task.data[p]) // returns an array of {key, val}
+      for (const q of intermediate) {
+        if (result[q.key]) {
+          result[q.key].push(q.val)
+        } else {
+          result[q.key] = [q.val]
+        }
+      }
+    }
   } else if (task.type === "reduce") {
     /* {"candy": 1, "cake": [1,1]} */
-    let fn = eval(fn)
-    result = {}
+    const fn = eval(fn)
     for (const p in task.data) {
       result[p] = fn(p, task.data[p])
     }

@@ -8,6 +8,7 @@ const base64id = require("base64id")
 const io = require("socket.io")(http)
 const port = process.env.PORT || 3000
 const fs = require("fs").promises
+const kfs = require("key-file-storage")('./storage')
 
 // dictionary of requesters
 // map requester IDs (UUID) to a requester object (requester socket ID, an array of job IDs)
@@ -75,6 +76,7 @@ const manageQueues = async () => {
           console.error(jobId, err, stderr)
         } else {
           jobs[jobId].divided = true
+          jobs[jobId].mapTasks = []
           const numTasks = parseInt(stdout.match(/Total files to be written: ([0-9]+)/))
           fs.unlink(`./tmp/${jobId}.json`, err => {})
           for (let i = 0; i < numTasks; i++) {
@@ -90,6 +92,7 @@ const manageQueues = async () => {
                 data: []
               }
               tasks[taskId] = task
+              jobs[jobId].mapTasks.push(taskId)
               taskQueue.push(taskId)
               manageTaskQueue()
             })
@@ -98,6 +101,11 @@ const manageQueues = async () => {
       })
     }
   }
+}
+
+const allTasksFinished = (jobId, taskType) => {
+  const tasks = jobs[jobId][taskType]
+  return tasks.all(taskId => tasks[taskId].result)
 }
 
 io.on("connection", async socket => {
@@ -134,27 +142,45 @@ io.on("connection", async socket => {
     tasks[taskResult.taskId].result = taskResult.result
     removeItem(taskQueue, taskResult.taskId)
 
-    if (tasks[taskId].type === "map") {
+    if (tasks[taskResult.taskId].type === "map") {
       // TODO check if this is map result, if it is, then save it to storage, 
       // and check if all the map tasks are finished, if they are all finished, then divide into (multiple) reduce tasks
+      tasks[taskResult.taskId].result = taskResult.result
+      if (allTasksFinished(taskResult.jobId, "mapTasks")) {
+        let taskId = base64id.generateId()
+        let task = {
+          taskId: taskId,
+          jobId: jobId,
+          assigned: false,
+          result: false,
+          type: "reduce",
+          fn: jobs[jobId].reduce,
+          data: [] // FIXME
+        }
+        tasks[taskId] = task
+        jobs[jobId].reduceTasks.push(taskId)
+        taskQueue.push(taskId)
+        manageTaskQueue()
+      }
       
 
-    } else if (tasks[taskId].type === "reduce") {
+    } else if (tasks[taskResult.taskId].type === "reduce") {
       // TODO check if it is a reduce result, if it is, then save it to storage, 
       // and check if all the reduce tasks are finished, if they are, send result to requester
+      if (allTasksFinished(taskResult.jobId, "reduceTasks")) {
+        let requesterId = jobs[taskResult.jobId].requesterId
+        let requesterSocketId = requesters[requesterId].socketId
+        let requesterSocket = Array.from(await io.in("requester").fetchSockets()).find(socket => socket.id == requesterSocketId)
+        delete jobs[taskResult.jobId]
+        removeItem(jobQueue, taskResult.jobId)
+        if (requesterSocket) {
+          io.emit("jobFinished", taskResult)
+        }
+        await manageQueues()
+      }
 
     }
 
-    // FIXME if the entire job is finished
-    let requesterId = jobs[taskResult.jobId].requesterId
-    let requesterSocketId = requesters[requesterId].socketId
-    let requesterSocket = Array.from(await io.in("requester").fetchSockets()).find(socket => socket.id == requesterSocketId)
-    delete jobs[taskResult.jobId]
-    removeItem(jobQueue, taskResult.jobId)
-    if (requesterSocket) {
-      io.emit("jobFinished", taskResult)
-    }
-    await manageQueues()
   })
 
   socket.on("disconnect", async () => {

@@ -3,13 +3,13 @@ function map(key, value, pattern) {
     // value is the collection of words we are evaluating that are part of this split
     // pattern is the regex we are trying to grep
 
-    let intermediateKV = {};        // k-V store for output
+    let intermediate = [];
     for (i in value) {
         if (value[i].match(pattern)) {
-            intermediateKV[value[i]] = 1;  // value is just a dummy value
+            intermediate.push({key: value[i], val: 1});  // value is just a dummy value
         }
     }
-    return intermediateKV;
+    return intermediate;
 }
 
 /*
@@ -33,16 +33,20 @@ function reduce(key, values) {
 
     // SORTING is not necessary here because this is an identity function
     // output should just be all the keys included by the number of times they were included
+  
+    let result = {};
+    result[key] = values.length
 
-    const matches = [];
-    for (var key of Object.keys(values)) {
-        let frequencies = values[key];
-        // now push the word into matches for each occurrence of 1 in frequencies
-        for (i in frequencies) {
-            matches.push(key);
-        }
-    }
-    return matches;
+    // const matches = [];
+
+    // for (let key of values) {
+    //     let frequencies = values[key];
+    //     // now push the word into matches for each occurrence of 1 in frequencies
+    //     for (i in frequencies) {
+    //         matches.push(key);
+    //     }
+    // }
+    // return matches;
 
     /*
     const matches = [];
