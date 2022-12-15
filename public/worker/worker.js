@@ -25,11 +25,14 @@ socket.on("task", task => {
         }
       }
     }
+    console.log(result)
   } else if (task.type === "reduce") {
     /* {"candy": 1, "cake": [1,1]} */
     for (const p in data) {
+      console.log(`Handling ${p}`)
       result[p] = fn(p, data[p])
     }
+    console.log(result)
   } else {
     console.error("A task that's neither map nor reduce?!")
     // FIXME send a failure message

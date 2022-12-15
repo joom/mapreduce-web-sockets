@@ -8,7 +8,7 @@ const base64id = require("base64id")
 const io = require("socket.io")(http)
 const port = process.env.PORT || 3000
 const fs = require("fs").promises
-const kfs = require("key-file-storage").default("./storage")
+const ndb = require('node-json-db')
 
 // dictionary of requesters
 // map requester IDs (UUID) to a requester object (requester socket ID, an array of job IDs)
@@ -60,14 +60,14 @@ const manageTaskQueue = async () => {
       console.error("No available workers!")
     } else {
       let picked = activeWorkers[pickedIndex]
-      console.log(`Picked worker ${picked}`);
       tasks[taskId].assigned = picked.id
       busyWorkers[picked.id] = true
       let data
       if (tasks[taskId].type === "map") {
-        data = Buffer.from(await fs.readFile(`./tmp/${taskId}.json`)).toJSON()
+        data = JSON.parse(Buffer.from(await fs.readFile(`./tmp/${taskId}.json`)).toString())
       } else if (tasks[taskId].type === "reduce") {
-        data = kfs[taskId]
+        let db = new ndb.JsonDB(new ndb.Config(`storage/${tasks[taskId].jobId}`, true, false, '/'))
+        data = await db.getData(`/`)
       } else {
         console.error("Unrecognized kind of task")
         continue
@@ -157,18 +157,9 @@ io.on("connection", async socket => {
   socket.on("taskFinished", async taskResult => {
     busyWorkers[socket.id] = false
     tasks[taskResult.taskId].result = true
-    if (!kfs[taskResult.taskId]) { kfs[taskResult.taskId] = {} }
-    for (const p in taskResult.result) {
-      if (kfs[taskResult.taskId][p]) {
-        kfs[taskResult.taskId][p].push(...taskResult.result[p])
-      } else {
-        if (tasks[taskResult.taskId].type === "map") {
-          kfs[taskResult.taskId][p] = [taskResult.result[p]]
-        } else { // reduce
-          kfs[taskResult.taskId][p] = taskResult.result[p]
-        }
-      }
-    }
+    let db = new ndb.JsonDB(new ndb.Config(`storage/${taskResult.jobId}`, true, false, '/'))
+    await db.push(`/`, taskResult.result, false)
+    await db.save()
     removeItem(taskQueue, taskResult.taskId)
 
     if (tasks[taskResult.taskId].type === "map") {
