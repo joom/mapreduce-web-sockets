@@ -12,10 +12,9 @@ socket.on("task", task => {
 
   let result = {}
   let data = task.data
+  const fn = eval(`(${task.fn})`)
   if (task.type === "map") {
     // freq example: task.data is an array of arrays
-    const fn = eval(`(${task.fn})`)
-    console.log(fn);
     for (const p in data) {
       let intermediate = fn(task.taskId, data[p]) // returns an array of {key, val}
       for (const q of intermediate) {
@@ -28,8 +27,6 @@ socket.on("task", task => {
     }
   } else if (task.type === "reduce") {
     /* {"candy": 1, "cake": [1,1]} */
-    const fn = eval(fn)
-    console.log(fn);
     for (const p in data) {
       result[p] = fn(p, data[p])
     }
@@ -43,6 +40,7 @@ socket.on("task", task => {
     workerId: id,
     jobId: task.jobId,
     taskId: task.taskId,
+    status: 1,
     result
   })
 })

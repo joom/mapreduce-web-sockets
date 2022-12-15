@@ -71,7 +71,7 @@ const renderJobs = () => {
     }
 
     job.results.forEach((result, i) => {
-      results += `<p class="mb-0 opacity-75"><a href="#">Result ${i}</a>: ${result}</p>`
+      results += `<p class="mb-0 opacity-75"><a href="#">Result ${i}</a>: ${JSON.stringify(result)}</p>`
     })
     if (job.error) {
       error = `<p class="mb-0" style="color:var(--bs-danger); font-weight: bold;">${job.error}</p>`
@@ -141,12 +141,11 @@ socket.on("jobFinished", jobResult => {
   console.log("Job finished!");
   let i = myJobs.findIndex(job => job.jobId === jobResult.jobId)
   if (i === -1) { console.error("Job cannot be found locally") }
-  if (jobResult.result.success) {
-    myJobs[i].status = 1
-    myJobs[i].results.push(jobResult.result.body)
-  } else {
-    myJobs[i].status = -1
-    myJobs[i].error = jobResult.result.error
+  myJobs[i].status = jobResult.status
+  if (jobResult.status === 1) {
+    myJobs[i].results.push(jobResult.result)
+  } else if (jobResult.status === -1) {
+    myJobs[i].error = jobResult.error
   }
   localStorage.jobs = JSON.stringify(myJobs)
   renderJobs()

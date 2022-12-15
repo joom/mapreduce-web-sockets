@@ -63,9 +63,17 @@ const manageTaskQueue = async () => {
       console.log(`Picked worker ${picked}`);
       tasks[taskId].assigned = picked.id
       busyWorkers[picked.id] = true
-      const data = await fs.readFile(`./tmp/${taskId}.json`)
+      let data
+      if (tasks[taskId].type === "map") {
+        data = Buffer.from(await fs.readFile(`./tmp/${taskId}.json`)).toJSON()
+      } else if (tasks[taskId].type === "reduce") {
+        data = kfs[taskId]
+      } else {
+        console.error("Unrecognized kind of task")
+        continue
+      }
       console.log("Sending task to worker");
-      picked.emit("task", { ...tasks[taskId], data: Buffer.from(data).toJSON() })
+      picked.emit("task", { ...tasks[taskId], data })
     }
   }
 }
