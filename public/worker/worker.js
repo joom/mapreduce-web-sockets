@@ -7,8 +7,7 @@ socket.on("welcome", socketId => {
 })
 
 socket.on("task", task => {
-  // console.log(`new task!: ${task}`)
-  console.log(task);
+  console.log("new task!", task)
 
   let result = {}
   let data = task.data
@@ -29,7 +28,6 @@ socket.on("task", task => {
   } else if (task.type === "reduce") {
     /* {"candy": 1, "cake": [1,1]} */
     for (const p in data) {
-      console.log(`Handling ${p}`)
       result[p] = fn(p, data[p])
     }
     console.log(result)

@@ -46,10 +46,18 @@ if (localStorage.requesterId) {
 }
 socket.emit("requesterId", id)
 
+window.download = (jobIndex, resultIndex) => {
+  var pom = document.createElement('a')
+  pom.setAttribute('href', 'data:text/plain;charset=utf-8,' +
+    encodeURIComponent(JSON.stringify(myJobs[jobIndex].results[resultIndex])))
+  pom.setAttribute('download', `result-${jobIndex}-${resultIndex}.json`)
+  pom.click()
+}
+
 const renderJobs = () => {
   let temp = ``
 
-  myJobs.forEach(job => {
+  myJobs.forEach((job, jobIndex) => {
     let status
     let results = ``
     let error = ``
@@ -71,7 +79,8 @@ const renderJobs = () => {
     }
 
     job.results.forEach((result, i) => {
-      results += `<p class="mb-0 opacity-75"><a href="#">Result ${i}</a>: ${JSON.stringify(result)}</p>`
+      let time = ((job.endTime - job.startTime) / 1000).toFixed(2)
+      results += `<p class="mb-0 opacity-75"><a href="javascript:download(${jobIndex}, ${i})">Result</a>: <span class="time">${time}</span> secs</p>`
     })
     if (job.error) {
       error = `<p class="mb-0" style="color:var(--bs-danger); font-weight: bold;">${job.error}</p>`
@@ -126,7 +135,8 @@ document.querySelector(`button[type="submit"]`).addEventListener("click", e => {
     map: document.querySelector("#map").innerText,
     reduce: document.querySelector("#reduce").innerText,
     mapTasks: [],
-    reduceTasks: []
+    reduceTasks: [],
+    startTime: Date.now()
   }
   socket.emit("job", job)
   job.status = 0 // in progress
@@ -141,12 +151,13 @@ socket.on("jobFinished", jobResult => {
   console.log("Job finished!");
   let i = myJobs.findIndex(job => job.jobId === jobResult.jobId)
   if (i === -1) { console.error("Job cannot be found locally") }
+  myJobs[i].endTime = Date.now()
   myJobs[i].status = jobResult.status
+  localStorage.jobs = JSON.stringify(myJobs)
   if (jobResult.status === 1) {
     myJobs[i].results.push(jobResult.result)
   } else if (jobResult.status === -1) {
     myJobs[i].error = jobResult.error
   }
-  localStorage.jobs = JSON.stringify(myJobs)
   renderJobs()
 })
