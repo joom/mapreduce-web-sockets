@@ -32,14 +32,24 @@
                 <div class="col-12">
                   <label for="map" class="form-label">Map function (in JavaScript, should not variables from outside)</label>
                   <div id="map" class="form-control" required>function map(key, value) {
-
+    const result = []
+    let val = 1
+    for (const i of value) {
+        let key = i
+        result.push({key, val})
+    }
+    return result
 }</div>
                 </div>
 
                 <div class="col-12">
                   <label for="reduce" class="form-label">Reduce function (in JavaScript, should not variables from outside)</label>
                   <div id="reduce" class="form-control" required>function reduce(key, values) {
-
+    let count = 0
+    for (const i of values) {
+        count+=i
+    }
+    return [count]
 }</div>
                 </div>
 

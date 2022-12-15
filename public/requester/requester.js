@@ -124,7 +124,9 @@ document.querySelector(`button[type="submit"]`).addEventListener("click", e => {
     fileName: file.name,
     fileContent: file,
     map: document.querySelector("#map").innerText,
-    reduce: document.querySelector("#reduce").innerText
+    reduce: document.querySelector("#reduce").innerText,
+    mapTasks: [],
+    reduceTasks: []
   }
   socket.emit("job", job)
   job.status = 0 // in progress
@@ -136,6 +138,7 @@ document.querySelector(`button[type="submit"]`).addEventListener("click", e => {
 })
 
 socket.on("jobFinished", jobResult => {
+  console.log("Job finished!");
   let i = myJobs.findIndex(job => job.jobId === jobResult.jobId)
   if (i === -1) { console.error("Job cannot be found locally") }
   if (jobResult.result.success) {

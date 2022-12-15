@@ -11,11 +11,13 @@ socket.on("task", task => {
   console.log(task);
 
   let result = {}
+  let data = task.data
   if (task.type === "map") {
     // freq example: task.data is an array of arrays
-    const fn = eval(fn)
-    for (const p in task.data) {
-      let intermediate = fn(task.taskId, task.data[p]) // returns an array of {key, val}
+    const fn = eval(`(${task.fn})`)
+    console.log(fn);
+    for (const p in data) {
+      let intermediate = fn(task.taskId, data[p]) // returns an array of {key, val}
       for (const q of intermediate) {
         if (result[q.key]) {
           result[q.key].push(q.val)
@@ -27,18 +29,20 @@ socket.on("task", task => {
   } else if (task.type === "reduce") {
     /* {"candy": 1, "cake": [1,1]} */
     const fn = eval(fn)
-    for (const p in task.data) {
-      result[p] = fn(p, task.data[p])
+    console.log(fn);
+    for (const p in data) {
+      result[p] = fn(p, data[p])
     }
   } else {
     console.error("A task that's neither map nor reduce?!")
     // FIXME send a failure message
     return
   }
+  console.log("Sending result!");
   socket.emit("taskFinished", {
     workerId: id,
     jobId: task.jobId,
     taskId: task.taskId,
-    result: {success: true, body: result} 
+    result
   })
 })

@@ -1,11 +1,10 @@
 function map(key, value) {
     const result = []
     let val = 1
-    for (i of value) {
+    for (const i of value) {
         let key = i
         result.push({key, val})
     }
-
     return result
 }
 
@@ -23,7 +22,7 @@ function map(key, value) {
 
 function reduce(key, values) {
     let count = 0
-    for (i of values) {
+    for (const i of values) {
         count+=i
     }
     return [count]
