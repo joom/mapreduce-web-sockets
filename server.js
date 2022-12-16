@@ -1,4 +1,4 @@
-const SIZE = 1000 // in kilobytes
+const SIZE = 7 // in kilobytes
 
 const { exec } = require("child_process")
 const express = require("express")
@@ -47,7 +47,7 @@ const removeItem = (array, item) => {
   }
 }
 
-const manageTaskQueue = async () => {
+const manageTaskQueue = async (attempt = 0) => {
   // Assign tasks to workers
   console.log(`Managing task queue`);
   for (const taskId of taskQueue) {
@@ -58,6 +58,7 @@ const manageTaskQueue = async () => {
     let pickedIndex = activeWorkers.findIndex(worker => !busyWorkers[worker.id])
     if (pickedIndex === -1) {
       console.error("No available workers!")
+      return setTimeout(() => {manageTaskQueue(attempt + 1)}, 10 * Math.pow(1.5, attempt))
     } else {
       let picked = activeWorkers[pickedIndex]
       tasks[taskId].assigned = picked.id
@@ -181,8 +182,8 @@ io.on("connection", async socket => {
         jobs[taskResult.jobId].reduceTasks.push(taskId)
         taskQueue.push(taskId)
         manageTaskQueue()
+        return
       }
-      
 
     } else if (tasks[taskResult.taskId].type === "reduce") {
       // check if it is a reduce result, if it is, then save it to storage, 
@@ -209,6 +210,11 @@ io.on("connection", async socket => {
       if (requesters[i].socketId == socket.id) {
         requesters[i].socketId = null
       } 
+    }
+    for (let taskId in tasks) {
+      if (tasks[taskId].assigned === socket.id) {
+        tasks[taskId].assigned = false
+      }
     }
     await manageQueues()
   });
