@@ -138,6 +138,7 @@ document.querySelector(`button[type="submit"]`).addEventListener("click", e => {
     reduceTasks: [],
     startTime: Date.now()
   }
+  console.log("Sending job")
   socket.emit("job", job)
   job.status = 0 // in progress
   job.results = []

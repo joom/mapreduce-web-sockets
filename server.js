@@ -1,11 +1,13 @@
-const SIZE = 7 // in kilobytes
+const SIZE = 100 // in kilobytes
 
 const { exec } = require("child_process")
 const express = require("express")
 const app = express()
 const http = require("http").Server(app)
 const base64id = require("base64id")
-const io = require("socket.io")(http)
+const io = require("socket.io")(http, {
+    maxHttpBufferSize: 1e18, pingTimeout: 60000
+})
 const port = process.env.PORT || 3000
 const fs = require("fs").promises
 const ndb = require('node-json-db')
@@ -49,7 +51,7 @@ const removeItem = (array, item) => {
 
 const manageTaskQueue = async (attempt = 0) => {
   // Assign tasks to workers
-  console.log(`Managing task queue`);
+  // console.log(`Managing task queue`);
   for (const taskId of taskQueue) {
     if (tasks[taskId].assigned) {
       continue
@@ -57,7 +59,7 @@ const manageTaskQueue = async (attempt = 0) => {
     const activeWorkers = await io.in("worker").fetchSockets()
     let pickedIndex = activeWorkers.findIndex(worker => !busyWorkers[worker.id])
     if (pickedIndex === -1) {
-      console.error("No available workers!")
+      // console.error("No available workers!")
       return setTimeout(() => {manageTaskQueue(attempt + 1)}, 10 * Math.pow(1.5, attempt))
     } else {
       let picked = activeWorkers[pickedIndex]
@@ -73,7 +75,7 @@ const manageTaskQueue = async (attempt = 0) => {
         console.error("Unrecognized kind of task")
         continue
       }
-      console.log("Sending task to worker");
+      console.log(`Sending ${tasks[taskId].type} task to worker`);
       picked.emit("task", { ...tasks[taskId], data })
     }
   }
@@ -84,6 +86,7 @@ const manageQueues = async () => {
   for (const jobId of jobQueue) {
     if (!jobs[jobId].divided) {
       exec(`json-split -f ./tmp/${jobId}.json -s ${SIZE} -n ${jobId}`, async (err, stdout, stderr) => {
+        console.log("Json split")
         if(err) {
           console.error(jobId, err)
         } else {
@@ -107,7 +110,8 @@ const manageQueues = async () => {
               assigned: false,
               result: false,
               type: "map",
-              fn: jobs[jobId].map,
+              mapFn: jobs[jobId].map,
+              reduceFn: jobs[jobId].reduce,
               data: []
             }
             tasks[taskId] = task
@@ -123,7 +127,7 @@ const manageQueues = async () => {
 }
 
 const allTasksFinished = (jobId, taskType) => {
-  return jobs[jobId][taskType].every(taskId => tasks[taskId].result)
+  return !jobs[jobId] || jobs[jobId][taskType].every(taskId => tasks[taskId].result)
 }
 
 io.on("connection", async socket => {
@@ -147,7 +151,9 @@ io.on("connection", async socket => {
   })
 
   socket.on("job", async job => {
+    console.log("Job received")
     await fs.writeFile(`./tmp/${job.jobId}.json`, job.fileContent)
+    console.log("Wrote to file")
     job.divided = false
     jobs[job.jobId] = job
     requesters[job.requesterId].jobs.push(job.jobId)
@@ -175,7 +181,7 @@ io.on("connection", async socket => {
           assigned: false,
           result: false,
           type: "reduce",
-          fn: jobs[taskResult.jobId].reduce,
+          reduceFn: jobs[taskResult.jobId].reduce,
           data: [] // initial!
         }
         tasks[taskId] = task
@@ -189,6 +195,7 @@ io.on("connection", async socket => {
       // check if it is a reduce result, if it is, then save it to storage, 
       // and check if all the reduce tasks are finished, if they are, send result to requester
       if (allTasksFinished(taskResult.jobId, "reduceTasks")) {
+        if (!jobs[taskResult.jobId]) { return }
         let requesterId = jobs[taskResult.jobId].requesterId
         let requesterSocketId = requesters[requesterId].socketId
         let requesterSocket = Array.from(await io.in("requester").fetchSockets()).find(socket => socket.id == requesterSocketId)
@@ -216,8 +223,8 @@ io.on("connection", async socket => {
         tasks[taskId].assigned = false
       }
     }
-    await manageQueues()
-  });
+    manageQueues()
+  })
 })
 
 http.listen(port, () => {

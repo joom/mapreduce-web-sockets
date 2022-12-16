@@ -11,11 +11,12 @@ socket.on("task", task => {
 
   let result = {}
   let data = task.data
-  const fn = eval(`(${task.fn})`)
   if (task.type === "map") {
     // freq example: task.data is an array of arrays
+    const mapFn = eval(`(${task.mapFn})`)
+    const reduceFn = eval(`(${task.reduceFn})`)
     for (const p in data) {
-      let intermediate = fn(task.taskId, data[p]) // returns an array of {key, val}
+      let intermediate = mapFn(task.taskId, data[p]) // returns an array of {key, val}
       for (const q of intermediate) {
         if (result[q.key]) {
           result[q.key].push(q.val)
@@ -24,11 +25,15 @@ socket.on("task", task => {
         }
       }
     }
+    for (const p in result) {
+      result[p] = reduceFn(p, result[p])
+    }
     console.log(result)
   } else if (task.type === "reduce") {
+    const reduceFn = eval(`(${task.reduceFn})`)
     /* {"candy": 1, "cake": [1,1]} */
     for (const p in data) {
-      result[p] = fn(p, data[p])
+      result[p] = reduceFn(p, data[p])
     }
     console.log(result)
   } else {
