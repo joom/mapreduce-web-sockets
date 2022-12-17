@@ -24,8 +24,8 @@
             <form class="needs-validation" novalidate>
               <div class="row g-3">
                 <div class="col-md-12">
-                  <label for="file" class="form-label">Data to process (in JSON format)</label>
-                  <input type="file" class="form-control" id="file" placeholder="" accept=".json" required>
+                  <label for="file" class="form-label">Data to process (in <a href="https://jsonlines.org/">JSON Lines</a> format)</label>
+                  <input type="file" class="form-control" id="file" placeholder="" accept=".jsonl" required>
                   <span id="fileSize"></span>
                 </div>
 
@@ -56,9 +56,9 @@
 
               <hr class="my-4">
 
-              <div class="form-check">
-                <input type="checkbox" class="form-check-input" id="skip-bad-records">
-                <label class="form-check-label" for="skip-bad-records">Skip bad records</label>
+              <div class="col-12">
+                <label class="form-label" for="task-size">Task size in kilobytes</label>
+                <input type="number" class="form-control" id="task-size" value="1000">
               </div>
 
               <hr class="my-4">

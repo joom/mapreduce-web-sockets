@@ -10,8 +10,8 @@ socket.on("task", task => {
   console.log("new task!", task)
 
   let result = {}
-  let data = task.data
   if (task.type === "map") {
+    let data = task.data.trim().split("\n").map(x => JSON.parse(x))
     // freq example: task.data is an array of arrays
     const mapFn = eval(`(${task.mapFn})`)
     const reduceFn = eval(`(${task.reduceFn})`)
@@ -30,6 +30,7 @@ socket.on("task", task => {
     }
     console.log(result)
   } else if (task.type === "reduce") {
+    let data = task.data
     const reduceFn = eval(`(${task.reduceFn})`)
     /* {"candy": 1, "cake": [1,1]} */
     for (const p in data) {
@@ -46,6 +47,7 @@ socket.on("task", task => {
     workerId: id,
     jobId: task.jobId,
     taskId: task.taskId,
+    taskSize: task.taskSize,
     status: 1,
     result
   })

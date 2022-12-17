@@ -88,7 +88,7 @@ const renderJobs = () => {
     temp += `<div class="list-group-item list-group-item-action d-flex gap-3 py-3" aria-current="true">
                 <div class="d-flex gap-2 w-100 justify-content-between">
                   <div>
-                    <h6 class="mb-0">${job.fileName}</h6>
+                    <h6 class="mb-0">${job.fileName}, task size ${job.taskSize} KB</h6>
                     ${results}
                     ${error}
                   </div>
@@ -136,7 +136,8 @@ document.querySelector(`button[type="submit"]`).addEventListener("click", e => {
     reduce: document.querySelector("#reduce").innerText,
     mapTasks: [],
     reduceTasks: [],
-    startTime: Date.now()
+    startTime: Date.now(),
+    taskSize: parseInt(document.querySelector("#task-size").value)
   }
   console.log("Sending job")
   socket.emit("job", job)
