@@ -1,15 +1,15 @@
-function map(key, value, pattern) {
-    // key is the map split name 
-    // value is the collection of words we are evaluating that are part of this split
-    // pattern is the regex we are trying to grep
-
-    let intermediate = [];
-    for (i in value) {
-        if (value[i].match(pattern)) {
-            intermediate.push({key: value[i], val: 1});  // value is just a dummy value
+// key is the map split name 
+// value is the collection of words we are evaluating that are part of this split
+// pattern is the regex we are trying to grep
+function map(key, value) {
+    let intermediate = []
+    let words = value.split(" ")
+    for (const i in words) {
+        if (words[i].match(/ing/)) {
+            intermediate.push({key: words[i], val: 1})
         }
     }
-    return intermediate;
+    return intermediate
 }
 
 /*
@@ -23,38 +23,7 @@ or use the described sorting and shuffling API in Hadoop
 */
 
 function reduce(key, values) {
-    // key is the hash for all keys that this reducer will reduce
-    // values are merged lists of all such keys and their values (the "1") dummy value
-
-    // e.g key = hash(key) % |reducers|,
-    // val = javascript object with some number of keys that mapped to this hash:
-        // "word": [1,1,1,1]    // if word was seen 4 times
-        // "ward": [1,1]        // if ward was seen 2 times
-
-    // SORTING is not necessary here because this is an identity function
-    // output should just be all the keys included by the number of times they were included
-  
-    let result = {};
-    result[key] = values.length
-
-    // const matches = [];
-
-    // for (let key of values) {
-    //     let frequencies = values[key];
-    //     // now push the word into matches for each occurrence of 1 in frequencies
-    //     for (i in frequencies) {
-    //         matches.push(key);
-    //     }
-    // }
-    // return matches;
-
-    /*
-    const matches = [];
-    for (i in values) {
-        matches.push(key);  // push the matched word into matches |values| number of times
-    }
-    return matches;
-    */
+    return [values.reduceRight((x,y)=>x+y, 0)]
 }
 
 //var map1 = map("key", ["ward", "word", "wurd", "volvo", "bmw", "max", "time", "done", "wone", "pone", "one"], /w.rd/g)

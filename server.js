@@ -1,5 +1,3 @@
-const SIZE = 100 // in kilobytes
-
 const { exec } = require("child_process")
 const express = require("express")
 const app = express()
@@ -11,6 +9,7 @@ const io = require("socket.io")(http, {
 const port = process.env.PORT || 3000
 const fs = require("fs").promises
 const ndb = require('node-json-db')
+const glob = require("glob")
 
 // dictionary of requesters
 // map requester IDs (UUID) to a requester object (requester socket ID, an array of job IDs)
@@ -67,7 +66,7 @@ const manageTaskQueue = async (attempt = 0) => {
       busyWorkers[picked.id] = true
       let data
       if (tasks[taskId].type === "map") {
-        data = JSON.parse(Buffer.from(await fs.readFile(`./tmp/${taskId}.json`)).toString())
+        data = Buffer.from(await fs.readFile(`./tmp/${taskId}.jsonl`)).toString()
       } else if (tasks[taskId].type === "reduce") {
         let db = new ndb.JsonDB(new ndb.Config(`storage/${tasks[taskId].jobId}`, true, false, '/'))
         data = await db.getData(`/`)
@@ -85,7 +84,7 @@ const manageQueues = async () => {
   // Break the job into multiple tasks
   for (const jobId of jobQueue) {
     if (!jobs[jobId].divided) {
-      exec(`json-split -f ./tmp/${jobId}.json -s ${SIZE} -n ${jobId}`, async (err, stdout, stderr) => {
+      exec(`gsplit --numeric-suffixes=1 -a 6 -C ${jobs[jobId].taskSize}K ./tmp/${jobId}.jsonl ./split/${jobId}`, async (err, stdout, stderr) => {
         console.log("Json split")
         if(err) {
           console.error(jobId, err)
@@ -93,33 +92,36 @@ const manageQueues = async () => {
           jobs[jobId].divided = true
           jobs[jobId].mapTasks = []
           console.log(stderr);
-          const numTasks = parseInt(stdout.match(/Total files to be written: ([0-9]+)/)[1])
-          console.log(`${numTasks} tasks to create`)
+          // const numTasks = parseInt(stdout.match(/Total files to be written: ([0-9]+)/)[1])
+          // console.log(`${numTasks} tasks to create`)
           console.log("Removing job file")
-          fs.unlink(`./tmp/${jobId}.json`)
-          for (let i = 0; i < numTasks; i++) {
-            let taskId = base64id.generateId()
-            console.log("Renaming task file")
-            console.log(`job id: ${jobId}`);
-            console.log(`task id: ${taskId}`);
-            await fs.rename(`./tmp/export/${jobId}-${i}.json`, `./tmp/${taskId}.json`)
-            console.log("After rename")
-            let task = {
-              taskId: taskId,
-              jobId: jobId,
-              assigned: false,
-              result: false,
-              type: "map",
-              mapFn: jobs[jobId].map,
-              reduceFn: jobs[jobId].reduce,
-              data: []
+          // try { fs.unlink(`./tmp/${jobId}.jsonl`) } catch (e) {}
+          glob(`./split/${jobId}*`, {}, async (err, files) => {
+            for (let i in files) {
+              let taskId = base64id.generateId()
+              console.log("Renaming task file")
+              console.log(`job id: ${jobId}`);
+              console.log(`task id: ${taskId}`);
+              await fs.rename(files[i], `./tmp/${taskId}.jsonl`)
+              console.log("After rename")
+              let task = {
+                taskId: taskId,
+                jobId: jobId,
+                taskSize: jobs[jobId].taskSize,
+                assigned: false,
+                result: false,
+                type: "map",
+                mapFn: jobs[jobId].map,
+                reduceFn: jobs[jobId].reduce,
+                data: []
+              }
+              tasks[taskId] = task
+              jobs[jobId].mapTasks.push(taskId)
+              taskQueue.push(taskId)
+              console.log("Should manage task queue now")
+              manageTaskQueue()
             }
-            tasks[taskId] = task
-            jobs[jobId].mapTasks.push(taskId)
-            taskQueue.push(taskId)
-            console.log("Should manage task queue now")
-            manageTaskQueue()
-          }
+          })
         }
       })
     }
@@ -152,7 +154,7 @@ io.on("connection", async socket => {
 
   socket.on("job", async job => {
     console.log("Job received")
-    await fs.writeFile(`./tmp/${job.jobId}.json`, job.fileContent)
+    await fs.writeFile(`./tmp/${job.jobId}.jsonl`, job.fileContent)
     console.log("Wrote to file")
     job.divided = false
     jobs[job.jobId] = job
@@ -168,6 +170,7 @@ io.on("connection", async socket => {
     await db.push(`/`, taskResult.result, false)
     await db.save()
     removeItem(taskQueue, taskResult.taskId)
+    // try { fs.unlink(`./tmp/${taskResult.taskId}.jsonl`) } catch(e) {}
 
     if (tasks[taskResult.taskId].type === "map") {
       // check if this is map result, if it is, then save it to storage, 
@@ -178,6 +181,7 @@ io.on("connection", async socket => {
         let task = {
           taskId: taskId,
           jobId: taskResult.jobId,
+          taskSize: jobs[taskResult.jobId].taskSize,
           assigned: false,
           result: false,
           type: "reduce",
@@ -203,6 +207,7 @@ io.on("connection", async socket => {
         removeItem(jobQueue, taskResult.jobId)
         if (requesterSocket) {
           io.emit("jobFinished", taskResult)
+          // try { fs.unlink(`./storage/${jobId}.json`) } catch(e) {}
         }
         await manageQueues()
       }

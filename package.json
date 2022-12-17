@@ -10,5 +10,8 @@
   },
   "scripts": {
     "start": "node server.js"
+  },
+  "devDependencies": {
+    "puppeteer": "^19.4.1"
   }
 }
