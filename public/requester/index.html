@@ -32,23 +32,21 @@
                 <div class="col-12">
                   <label for="map" class="form-label">Map function (in JavaScript, should not variables from outside)</label>
                   <div id="map" class="form-control" required>function map(key, value) {
-    const result = []
+    let intermediate = []
     let words = value.split(" ")
-    for (const word of words) {
-        result.push({key: word, val: 1})
+    for (const i in words) {
+        if (words[i].match(/ing/)) {
+            intermediate.push({key: words[i], val: 1})
+        }
     }
-    return result
+    return intermediate
 }</div>
                 </div>
 
                 <div class="col-12">
                   <label for="reduce" class="form-label">Reduce function (in JavaScript, should not variables from outside)</label>
                   <div id="reduce" class="form-control" required>function reduce(key, values) {
-    let count = 0
-    for (const i of values) {
-        count+=i
-    }
-    return [count]
+    return [values.reduceRight(function (x,y) {return x+y}, 0)]
 }</div>
                 </div>
 
